@@ -1,3 +1,7 @@
+<!--
+# SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
+# SPDX-License-Identifier: MPL-2.0
+-->
 # os2mo-sd-integration
 
 OS2mo integration for SD Løn

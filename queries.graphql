@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: Magenta ApS <https://magenta.dk>
+# SPDX-License-Identifier: MPL-2.0
+
+query GetOrganization {
+  org {
+    uuid
+  }
+}
+
+mutation UpdateEngagement(
+  $uuid: UUID!
+  $from: DateTime!
+  $to: DateTime
+  $job_function: UUID!
+) {
+  engagement_update(
+    input: {
+      uuid: $uuid
+      validity: { from: $from, to: $to }
+      job_function: $job_function
+    }
+  ) {
+    uuid
+  }
+}
