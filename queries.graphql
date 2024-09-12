@@ -7,6 +7,52 @@ query GetOrganization {
   }
 }
 
+query GetEngagements(
+  $from_date: DateTime
+  $to_date: DateTime
+  $cpr: [CPR!]
+  $eng_user_key: [String!]
+) {
+  engagements(
+    filter: {
+      from_date: $from_date
+      to_date: $to_date
+      user_keys: $eng_user_key
+      employee: { cpr_numbers: $cpr }
+    }
+  ) {
+    objects {
+      validities {
+        person {
+          cpr_number
+          uuid
+        }
+        org_unit {
+          uuid
+          user_key
+          name
+        }
+        validity {
+          from
+          to
+        }
+        user_key
+        job_function {
+          user_key
+          name
+          uuid
+        }
+        engagement_type {
+          name
+          user_key
+          uuid
+        }
+      }
+      uuid
+    }
+  }
+}
+
 mutation UpdateEngagement(
   $uuid: UUID!
   $from: DateTime!
