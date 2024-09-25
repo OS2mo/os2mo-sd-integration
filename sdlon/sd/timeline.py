@@ -4,7 +4,11 @@ from datetime import date
 from datetime import datetime
 
 from sdclient.client import SDClient
+from sdclient.requests import GetEmploymentChangedRequest
+from sdclient.requests import GetEmploymentRequest
 from sdclient.responses import EmploymentWithLists
+from sdclient.responses import GetEmploymentChangedResponse
+from sdclient.responses import GetEmploymentResponse
 from zoneinfo import ZoneInfo
 
 TIMEZONE = ZoneInfo("Europe/Copenhagen")
@@ -14,6 +18,78 @@ class SD:
     def __init__(self, username: str, password: str, institution_identifier: str):
         self.institution_identifier = institution_identifier
         self.client = SDClient(username, password)
+
+    def _get_sd_employments(
+        self,
+        effective_date: date,
+        cpr: str,
+        emp_id: str,
+    ) -> GetEmploymentResponse:
+        """
+        Get SD employments from SD.
+
+        Args:
+            effective_date: the SD effective date
+            cpr: CPR-number of the employee
+            emp_id: SDs EmploymentIdentifier
+
+        Returns:
+            The SD employments
+        """
+
+        sd_employments = self.client.get_employment(
+            GetEmploymentRequest(
+                InstitutionIdentifier=self.institution_identifier,
+                EffectiveDate=effective_date,
+                PersonCivilRegistrationIdentifier=cpr,
+                EmploymentIdentifier=emp_id,
+                StatusActiveIndicator=True,
+                StatusPassiveIndicator=True,
+                EmploymentStatusIndicator=True,
+                DepartmentIndicator=True,
+                ProfessionIndicator=True,
+                WorkingTimeIndicator=True,
+                UUIDIndicator=True,
+            )
+        )
+        return sd_employments
+
+    def _get_sd_employments_changed(
+        self,
+        activation_date: date,
+        deactivation_date: date,
+        cpr: str,
+        emp_id: str,
+    ) -> GetEmploymentChangedResponse:
+        """
+        Get SD "employments changed" from SD via the GetEmploymentChanged
+        endpoint.
+
+        Args:
+            activation_date: SDs ActivationDate
+            deactivation_date: SDs DeactivationDate
+            cpr: CPR-number of the employee
+            emp_id: SDs EmploymentIdentifier
+
+        Returns:
+            The SD employments
+        """
+
+        sd_employments_changed = self.client.get_employment_changed(
+            GetEmploymentChangedRequest(
+                InstitutionIdentifier=self.institution_identifier,
+                PersonCivilRegistrationIdentifier=cpr,
+                EmploymentIdentifier=emp_id,
+                ActivationDate=activation_date,
+                DeactivationDate=deactivation_date,
+                EmploymentStatusIndicator=True,
+                DepartmentIndicator=True,
+                ProfessionIndicator=True,
+                WorkingTimeIndicator=True,
+                UUIDIndicator=True,
+            )
+        )
+        return sd_employments_changed
 
     def build_timeline(
         self,
