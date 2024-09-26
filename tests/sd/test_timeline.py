@@ -12,8 +12,12 @@ from sdclient.requests import GetEmploymentChangedRequest
 from sdclient.requests import GetEmploymentRequest
 from sdclient.responses import Employment
 from sdclient.responses import EmploymentDepartment
+from sdclient.responses import EmploymentPerson
+from sdclient.responses import EmploymentPersonWithLists
 from sdclient.responses import EmploymentStatus
 from sdclient.responses import EmploymentWithLists
+from sdclient.responses import GetEmploymentChangedResponse
+from sdclient.responses import GetEmploymentResponse
 from sdclient.responses import Profession
 
 from sdlon.sd.timeline import SD
@@ -243,3 +247,72 @@ def test_build_timeline_start_date_ok() -> None:
     # Act + Assert
     with pytest.raises(AssertionError):
         sd.build_timeline(date(2025, 1, 1), CPR, EMP_ID)
+
+
+def test_build_timeline_current_and_future_employments() -> None:
+    # Arrange
+    sd = SD("username", "password", "II")
+    sd._get_sd_employments = MagicMock(  # type: ignore
+        return_value=GetEmploymentResponse(
+            Person=[
+                EmploymentPerson(
+                    PersonCivilRegistrationIdentifier=CPR,
+                    Employment=[CURRENT_EMPLOYMENT],
+                )
+            ]
+        )
+    )
+    sd._get_sd_employments_changed = MagicMock(  # type: ignore
+        return_value=GetEmploymentChangedResponse(
+            Person=[
+                EmploymentPersonWithLists(
+                    PersonCivilRegistrationIdentifier=CPR,
+                    Employment=[
+                        EmploymentWithLists(
+                            EmploymentIdentifier="12345",
+                            EmploymentStatus=FUTURE_EMP_STATUSES,
+                            EmploymentDepartment=FUTURE_EMP_DEPARTMENTS,
+                            Profession=FUTURE_EMP_PROFESSIONS,
+                        )
+                    ],
+                )
+            ]
+        )
+    )
+
+    # Act
+    timeline = sd.build_timeline(datetime.now(TIMEZONE).date(), CPR, EMP_ID)
+
+    # Assert
+    assert timeline == EmploymentWithLists(
+        EmploymentIdentifier="12345",
+        EmploymentDate=date(1999, 1, 1),
+        AnniversaryDate=date(1999, 1, 1),
+        EmploymentStatus=[
+            EmploymentStatus(
+                ActivationDate=date(2000, 1, 1),
+                DeactivationDate=date(2000, 12, 31),
+                EmploymentStatusCode=1,
+            ),
+        ]
+        + FUTURE_EMP_STATUSES,
+        EmploymentDepartment=[
+            EmploymentDepartment(
+                ActivationDate=date(2000, 1, 1),
+                DeactivationDate=date(2000, 12, 31),
+                DepartmentIdentifier="ABCD",
+                DepartmentUUIDIdentifier="6220a7b8-db38-46d6-9a36-e1f432db2726",
+            )
+        ]
+        + FUTURE_EMP_DEPARTMENTS,
+        Profession=[
+            Profession(
+                ActivationDate=date(2000, 1, 1),
+                DeactivationDate=date(2000, 12, 31),
+                JobPositionIdentifier=1000,
+                EmploymentName="Ninja",
+                AppointmentCode="1",
+            )
+        ]
+        + FUTURE_EMP_PROFESSIONS,
+    )
