@@ -2,16 +2,25 @@
 # SPDX-License-Identifier: MPL-2.0
 from datetime import date
 from datetime import datetime
+from datetime import timedelta
 
+from more_itertools import one
 from sdclient.client import SDClient
 from sdclient.requests import GetEmploymentChangedRequest
 from sdclient.requests import GetEmploymentRequest
+from sdclient.responses import Employment
+from sdclient.responses import EmploymentDepartment
+from sdclient.responses import EmploymentStatus
 from sdclient.responses import EmploymentWithLists
 from sdclient.responses import GetEmploymentChangedResponse
 from sdclient.responses import GetEmploymentResponse
+from structlog import get_logger
 from zoneinfo import ZoneInfo
 
 TIMEZONE = ZoneInfo("Europe/Copenhagen")
+
+
+logger = get_logger()
 
 
 class SD:
@@ -91,14 +100,67 @@ class SD:
         )
         return sd_employments_changed
 
+    @staticmethod
+    def get_current_and_future_emp_timeline(
+        employment: Employment | None,
+        employment_changed: EmploymentWithLists | None,
+    ) -> EmploymentWithLists | None:
+        if employment is None and employment_changed is None:
+            return None
+
+        def get_future_emp_attrs(
+            attr: str,
+        ) -> list[EmploymentStatus | EmploymentDepartment]:
+            return (
+                attr_
+                if employment_changed is not None
+                and (attr_ := getattr(employment_changed, attr)) is not None
+                else []
+            )
+
+        # The EmploymentIdentifiers must match
+        if employment is not None and employment_changed is not None:
+            assert (
+                employment.EmploymentIdentifier
+                == employment_changed.EmploymentIdentifier
+            )
+
+        future_emp_statuses = get_future_emp_attrs("EmploymentStatus")
+        future_emp_departments = get_future_emp_attrs("EmploymentDepartment")
+        future_emp_professions = get_future_emp_attrs("Profession")
+
+        if employment is not None:
+            emp_timeline = EmploymentWithLists(
+                EmploymentIdentifier=employment.EmploymentIdentifier,
+                EmploymentDate=employment.EmploymentDate,
+                AnniversaryDate=employment.AnniversaryDate,
+                EmploymentStatus=[employment.EmploymentStatus] + future_emp_statuses,
+                EmploymentDepartment=[employment.EmploymentDepartment]
+                + future_emp_departments,
+                Profession=[employment.Profession] + future_emp_professions,
+            )
+        else:
+            assert employment_changed is not None
+            emp_timeline = EmploymentWithLists(
+                EmploymentIdentifier=employment_changed.EmploymentIdentifier,
+                EmploymentDate=employment_changed.EmploymentDate,
+                AnniversaryDate=employment_changed.AnniversaryDate,
+                EmploymentStatus=future_emp_statuses,
+                EmploymentDepartment=future_emp_departments,
+                Profession=future_emp_professions,
+            )
+
+        return emp_timeline
+
     def build_timeline(
         self,
         start_date: date,
         cpr: str,
         emp_id: str,
-    ) -> EmploymentWithLists:
+    ) -> EmploymentWithLists | None:
         """
-        Build the entire employment timeline for a given person and employment.
+        Build the current and future employment timeline for a given person and
+        employment.
 
         Args:
             sd_client: The SDClient.
@@ -109,8 +171,24 @@ class SD:
             emp_id: The SD EmploymentIdentifier for the persons employment.
 
         Returns:
-            Entire employment timeline.
+            Current and future employment timeline.
         """
 
         now = datetime.now(tz=TIMEZONE).date()
         assert start_date <= now, "start_date must be less than or equal to today"
+
+        # Get timeline from today and onwards
+        employment = self._get_sd_employments(now, cpr, emp_id)
+        future_employments = self._get_sd_employments_changed(
+            now + timedelta(days=1),  # Must be from tomorrow to avoid duplicates
+            date.max,
+            cpr,
+            emp_id,
+        )
+
+        timeline = SD.get_current_and_future_emp_timeline(
+            one(one(employment.Person).Employment),
+            one(one(future_employments.Person).Employment),
+        )
+
+        return timeline
