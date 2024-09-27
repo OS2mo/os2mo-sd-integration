@@ -218,6 +218,11 @@ def test_get_current_and_future_emp_timeline(
     )
 
 
+def test_get_current_and_future_emp_timeline_returns_none():
+    # Act + Assert
+    assert SD.get_current_and_future_emp_timeline(None, None) is None
+
+
 def test_get_current_and_future_emp_timeline_no_current_employment() -> None:
     # Arrange
     employment_changed = EmploymentWithLists(
