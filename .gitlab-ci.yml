@@ -6,7 +6,7 @@ stages:
   - lint
   - build
   - test
-#  - coverage
+  - coverage
   - release
   - deploy
   - docs
@@ -21,7 +21,7 @@ variables:
   COMPONENT: os2mo-sd-integration
 
   PYTEST_COV_MODULE: sdlon
-  PYTEST_COV_FAIL_UNDER: 0
+  PYTEST_COV_FAIL_UNDER: 100
 
   POETRY_VERSION: "1.8"
   PRECOMMIT_USE_POETRY: "true"
