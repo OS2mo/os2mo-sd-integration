@@ -158,6 +158,61 @@ def test__get_sd_employments_changed() -> None:
     assert emp == fake_get_employment_changed_response
 
 
+def test__get_max_activation_date() -> None:
+    # Arrange
+    timeline = EmploymentWithLists(
+        EmploymentIdentifier="12345",
+        EmploymentStatus=[
+            EmploymentStatus(
+                ActivationDate=date(1995, 1, 1),
+                DeactivationDate=date(2001, 12, 31),
+                EmploymentStatusCode=3,
+            ),
+            EmploymentStatus(
+                ActivationDate=date(2002, 1, 1),
+                DeactivationDate=date(9999, 12, 31),
+                EmploymentStatusCode=1,
+            ),
+        ],
+        EmploymentDepartment=[
+            EmploymentDepartment(
+                ActivationDate=date(2000, 1, 1),
+                DeactivationDate=date(2005, 12, 31),
+                DepartmentIdentifier="BCDE",
+                DepartmentUUIDIdentifier="123457b8-db38-46d6-9a36-e1f432db2726",
+            ),
+            EmploymentDepartment(
+                ActivationDate=date(2006, 1, 1),
+                DeactivationDate=date(9999, 12, 31),
+                DepartmentIdentifier="ABCD",
+                DepartmentUUIDIdentifier="6220a7b8-db38-46d6-9a36-e1f432db2726",
+            ),
+        ],
+        Profession=[
+            Profession(
+                ActivationDate=date(2002, 1, 1),  # This date should be returned
+                DeactivationDate=date(2003, 12, 31),
+                JobPositionIdentifier=2000,
+                EmploymentName="Shogun",
+                AppointmentCode="0",
+            ),
+            Profession(
+                ActivationDate=date(2004, 1, 1),
+                DeactivationDate=date(9999, 12, 31),
+                JobPositionIdentifier=3000,
+                EmploymentName="Kejser",
+                AppointmentCode="1",
+            ),
+        ],
+    )
+
+    # Act
+    max_date = SD._get_max_activation_date(timeline)
+
+    # Assert
+    assert max_date == date(2002, 1, 1)
+
+
 @pytest.mark.parametrize(
     "future_emp_status_list, future_emp_dep_list, future_emp_prof_list",
     [

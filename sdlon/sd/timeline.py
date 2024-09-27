@@ -4,6 +4,7 @@ from datetime import date
 from datetime import datetime
 from datetime import timedelta
 
+from more_itertools import first
 from more_itertools import one
 from sdclient.client import SDClient
 from sdclient.requests import GetEmploymentChangedRequest
@@ -24,6 +25,7 @@ TIMEZONE = ZoneInfo("Europe/Copenhagen")
 logger = get_logger()
 
 
+# TODO: rename to timeline
 class SD:
     def __init__(self, username: str, password: str, institution_identifier: str):
         self.institution_identifier = institution_identifier
@@ -152,6 +154,27 @@ class SD:
             )
 
         return emp_timeline
+
+    @staticmethod
+    def _get_max_activation_date(timeline: EmploymentWithLists) -> date:
+        """
+        Get the maximum ActivationDate of the first validities in the timeline segments.
+
+        Args:
+             timeline: The timeline to extract the max date from
+
+        Returns:
+            The maximum ActivationDate of the first validities in the timeline segments.
+        """
+        assert timeline.EmploymentStatus is not None
+        assert timeline.EmploymentDepartment is not None
+        assert timeline.Profession is not None
+
+        return max(
+            first(timeline.EmploymentStatus).ActivationDate,
+            first(timeline.EmploymentDepartment).ActivationDate,
+            first(timeline.Profession).ActivationDate,
+        )
 
     def build_timeline(
         self,
