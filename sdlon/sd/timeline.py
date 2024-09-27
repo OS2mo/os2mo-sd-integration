@@ -14,6 +14,7 @@ from sdclient.responses import EmploymentStatus
 from sdclient.responses import EmploymentWithLists
 from sdclient.responses import GetEmploymentChangedResponse
 from sdclient.responses import GetEmploymentResponse
+from sdclient.responses import Profession
 from structlog import get_logger
 from zoneinfo import ZoneInfo
 
@@ -110,7 +111,7 @@ class SD:
 
         def get_future_emp_attrs(
             attr: str,
-        ) -> list[EmploymentStatus | EmploymentDepartment]:
+        ) -> list[EmploymentStatus | EmploymentDepartment | Profession]:
             return (
                 attr_
                 if employment_changed is not None
