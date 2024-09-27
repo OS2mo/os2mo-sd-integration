@@ -178,17 +178,19 @@ class SD:
         assert start_date <= now, "start_date must be less than or equal to today"
 
         # Get timeline from today and onwards
-        employment = self._get_sd_employments(now, cpr, emp_id)
-        future_employments = self._get_sd_employments_changed(
+        employment_res = self._get_sd_employments(now, cpr, emp_id)
+        future_employments_res = self._get_sd_employments_changed(
             now + timedelta(days=1),  # Must be from tomorrow to avoid duplicates
             date.max,
             cpr,
             emp_id,
         )
 
+        employment = one(one(employment_res.Person).Employment)
+        future_employments = one(one(future_employments_res.Person).Employment)
+
         timeline = SD.get_current_and_future_emp_timeline(
-            one(one(employment.Person).Employment),
-            one(one(future_employments.Person).Employment),
+            employment, future_employments
         )
 
         return timeline
