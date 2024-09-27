@@ -6,7 +6,7 @@ stages:
   - lint
   - build
   - test
-#  - coverage
+  - coverage
   - release
   - deploy
   - docs
@@ -21,7 +21,7 @@ variables:
   COMPONENT: os2mo-sd-integration
 
   PYTEST_COV_MODULE: sdlon
-  PYTEST_COV_FAIL_UNDER: 0
+  PYTEST_COV_FAIL_UNDER: 100
 
   POETRY_VERSION: "1.8"
   PRECOMMIT_USE_POETRY: "true"
@@ -51,16 +51,16 @@ include:
       - gitlab-ci-templates/common/docker-release.v1.yml
         #      - gitlab-ci-templates/common/config-updater-flux.v1.yml
         #      - gitlab-ci-templates/common/config-updater-salt.v1.yml
-#  - project: labs/salt-automation
-#    file:
-#      - gitlab-ci-templates/python/pytest.v1.yml
-#    inputs:
-#      pytest_addopts: "-m 'not integration_test'"
-#    rules:
-#      - <<: *if-merge-request
-#        #  - project: rammearkitektur/os2mo
-#        #    file:
-#        #      - gitlab-ci-templates/integration-test-meta.v1.yml
+  - project: labs/salt-automation
+    file:
+      - gitlab-ci-templates/python/pytest.v1.yml
+    inputs:
+      pytest_addopts: "-m 'not integration_test'"
+    rules:
+      - <<: *if-merge-request
+        #  - project: rammearkitektur/os2mo
+        #    file:
+        #      - gitlab-ci-templates/integration-test-meta.v1.yml
 
 
 workflow:
