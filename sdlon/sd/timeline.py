@@ -188,11 +188,10 @@ class SD:
 
         Args:
             sd_client: The SDClient.
-            inst_id: The SD InstitutionIdentifier.
             start_date: The date back to which we should at least include SD employment
                 data. The start_date must be less than or equal to today.
             cpr: CPR-number of the person.
-            emp_id: The SD EmploymentIdentifier for the persons employment.
+            emp_id: The SD EmploymentIdentifier for the persons' employment.
 
         Returns:
             Current and future employment timeline.
@@ -210,6 +209,7 @@ class SD:
             emp_id,
         )
 
+        # TODO: handle case where person or employment is not found
         employment = one(one(employment_res.Person).Employment)
         future_employments = one(one(future_employments_res.Person).Employment)
 
