@@ -176,6 +176,56 @@ class SD:
             first(timeline.Profession).ActivationDate,
         )
 
+    @staticmethod
+    def _patch_timeline(emp: Employment, timeline: EmploymentWithLists) -> None:
+        def patch_segment(
+            seg_name: str, emp: Employment, timeline: EmploymentWithLists
+        ) -> None:
+            emp_seg = getattr(emp, seg_name)
+            timeline_seg = getattr(timeline, seg_name)
+            if emp_seg.DeactivationDate < first(timeline_seg).ActivationDate:
+                timeline_seg.insert(0, emp_seg)
+
+        patch_segment("EmploymentStatus", emp, timeline)
+        patch_segment("EmploymentDepartment", emp, timeline)
+        patch_segment("Profession", emp, timeline)
+
+    def _get_past_emp_timeline(
+        self,
+        start_date: date,
+        cpr: str,
+        emp_id: str,
+        timeline: EmploymentWithLists
+    ) -> EmploymentWithLists:
+        """
+        Patch the timeline with timeline segments from the past back to the given
+        start date.
+
+        Args:
+            start_date: The date back to which we should at least include SD employment
+                data. The start_date must be less than or equal to today.
+            cpr: CPR-number of the person.
+            emp_id: The SD EmploymentIdentifier for the persons' employment.
+            timeline: The timeline containing the current and future timeline segments.
+
+        Returns:
+            Timeline patched with timeline segments from the past.
+        """
+        next_lookup_date = SD._get_max_activation_date(timeline) - timedelta(days=1)
+        while next_lookup_date > start_date:
+            latest_next_lookup_date = next_lookup_date
+            # TODO: handle exception
+            emp = self._get_sd_employments(next_lookup_date, cpr, emp_id)
+            if emp.Person:
+                self._patch_timeline(emp, timeline)
+
+            next_lookup_date = SD._get_max_activation_date(timeline) - timedelta(days=1)
+            if next_lookup_date == latest_next_lookup_date:
+                # Infinite loop protection
+                break
+
+        return timeline
+
     def build_timeline(
         self,
         start_date: date,
